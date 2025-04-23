@@ -144,25 +144,48 @@ def post_process(pred, threshold=0.3, min_size=10):
 
 
 def compute_metrics(pred, mask, threshold=0.3):
-    # Apply post-processing
-    pred_processed = post_process(pred, threshold=threshold)
+    # Ensure pred and mask are on the same device
+    device = pred.device
     
-    pred_bin = (pred_processed > 0.5).float()
+    # Make sure we're working with batched tensors
+    if len(pred.shape) < 4:
+        pred = pred.unsqueeze(0)
+    if len(mask.shape) < 4:
+        mask = mask.unsqueeze(0)
+    
+    # Simple thresholding
+    pred_bin = (pred > threshold).float()
     mask_bin = (mask > 0.5).float()
-    # Flatten
-    pred_flat = pred_bin.view(-1)
-    mask_flat = mask_bin.view(-1)
-    tp = (pred_flat * mask_flat).sum()
-    tn = ((1 - pred_flat) * (1 - mask_flat)).sum()
-    fp = (pred_flat * (1 - mask_flat)).sum()
-    fn = ((1 - pred_flat) * mask_flat).sum()
-    eps = 1e-6
-    iou = tp / (tp + fp + fn + eps)
-    accuracy = (tp + tn) / (tp + tn + fp + fn + eps)
-    precision = tp / (tp + fp + eps)
-    recall = tp / (tp + fn + eps)
-    f1 = 2 * precision * recall / (precision + recall + eps)
-    return iou.item(), accuracy.item(), precision.item(), recall.item(), f1.item()
+    
+    # Calculate metrics batch-wise
+    batch_size = pred.shape[0]
+    iou_sum, acc_sum, prec_sum, rec_sum, f1_sum = 0, 0, 0, 0, 0
+    
+    for i in range(batch_size):
+        p = pred_bin[i].view(-1)
+        m = mask_bin[i].view(-1)
+        
+        tp = (p * m).sum().item()
+        fp = (p * (1-m)).sum().item()
+        fn = ((1-p) * m).sum().item()
+        tn = ((1-p) * (1-m)).sum().item()
+        
+        eps = 1e-6
+        iou = tp / (tp + fp + fn + eps)
+        acc = (tp + tn) / (tp + tn + fp + fn + eps)
+        prec = tp / (tp + fp + eps)
+        rec = tp / (tp + fn + eps)
+        f1 = 2 * prec * rec / (prec + rec + eps)
+        
+        iou_sum += iou
+        acc_sum += acc
+        prec_sum += prec
+        rec_sum += rec
+        f1_sum += f1
+    
+    return (iou_sum/batch_size, acc_sum/batch_size, 
+            prec_sum/batch_size, rec_sum/batch_size, 
+            f1_sum/batch_size)
 
 
 def find_optimal_threshold(model, val_loader, device):
