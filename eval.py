@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from albumentations.pytorch import ToTensorV2
 import segmentation_models_pytorch as smp
-from siamese_UNet import LEVIRCDDataset, get_transforms  # uses existing Dataset and transform logic
+from siamese_UNet import LEVIRCDDataset, get_transforms  
 
 def evaluate(model_path, test_dir, batch_size=4, size=256, threshold=0.5):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -56,8 +56,8 @@ def evaluate(model_path, test_dir, batch_size=4, size=256, threshold=0.5):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default='best_model.pth')
-    parser.add_argument('--test_dir', type=str, required=True)
+    parser.add_argument('--model_path', type=str, default='best_model_f1.pth')
+    parser.add_argument('--test_dir', type=str, default='C:/Users/saarsys/Desktop/AI Intern/LEVIR CD/test')
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--size', type=int, default=256)
     parser.add_argument('--threshold', type=float, default=0.5)
