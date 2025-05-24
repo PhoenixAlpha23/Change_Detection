@@ -6,3 +6,5 @@
 
 #### Update
 The data given to us by chandan sir is appropriate. But we will have to update the Classification labels according to the model we are trying to fine tune.
+
+or we can create a custom model from scratch for this. but that would need sufficiently more computational power. lets see
